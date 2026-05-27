@@ -16,6 +16,7 @@ public class BlockerService : IBlockerService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<BlockerService> _logger;
     private readonly ProcessWatcherService _processWatcher;
+    private readonly ISettingsService _settingsService;
 
     private static readonly TimeSpan PollingInterval = TimeSpan.FromSeconds(2);
 
@@ -26,11 +27,13 @@ public class BlockerService : IBlockerService
     public BlockerService(
         IServiceScopeFactory scopeFactory,
         ILogger<BlockerService> logger,
-        ProcessWatcherService processWatcher)
+        ProcessWatcherService processWatcher,
+        ISettingsService settingsService)
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
         _processWatcher = processWatcher;
+        _settingsService = settingsService;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken = default)
@@ -216,11 +219,15 @@ public class BlockerService : IBlockerService
         }
     }
 
-    private static void ShowBlockedNotification(string appName)
+    private void ShowBlockedNotification(string appName)
     {
+        var settings = _settingsService.Current;
+        if (!settings.ShowBlockNotification)
+            return;
+
         Application.Current.Dispatcher.BeginInvoke(() =>
         {
-            var vm = new BlockedNotificationViewModel(appName);
+            var vm = new BlockedNotificationViewModel(appName, settings.NotificationAutoCloseSeconds);
             var window = new BlockedNotificationWindow(vm);
             window.Show();
         });

@@ -7,19 +7,21 @@ namespace AppBlocker.ViewModels;
 public partial class BlockedNotificationViewModel : ObservableObject
 {
     private readonly DispatcherTimer _timer;
-    private int _remainingSeconds = 10;
+    private int _remainingSeconds;
 
     [ObservableProperty]
     private string _message = string.Empty;
 
     [ObservableProperty]
-    private int _countdown = 10;
+    private int _countdown;
 
     public event EventHandler? CloseRequested;
 
-    public BlockedNotificationViewModel(string appName)
+    public BlockedNotificationViewModel(string appName, int autoCloseSeconds = 10)
     {
         Message = $"{appName} is blocked";
+        _remainingSeconds = autoCloseSeconds;
+        Countdown = autoCloseSeconds;
 
         _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _timer.Tick += OnTimerTick;
