@@ -47,11 +47,53 @@ dotnet run --project src/AppBlocker
 
 ## Publish (self-contained .exe)
 
+### Using the publish profile (recommended)
+
+A reusable publish profile is included at `src/AppBlocker/Properties/PublishProfiles/win-x64.pubxml`.
+
+From the solution root:
+
 ```bash
-dotnet publish src/AppBlocker -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+dotnet publish src/AppBlocker -p:PublishProfile=win-x64
 ```
 
-The output file will be in `src/AppBlocker/bin/Release/net8.0-windows/win-x64/publish/`.
+From inside the project directory:
+
+```bash
+dotnet publish -p:PublishProfile=win-x64
+```
+
+From Visual Studio: open the Publish wizard (`Build → Publish AppBlocker`), select the existing `win-x64` profile, and click **Publish**.
+
+Output: `src/AppBlocker/publish/win-x64/AppBlocker.exe`
+
+### CLI alternative (without the profile)
+
+```bash
+dotnet publish src/AppBlocker -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none
+```
+
+### Output
+
+| File | Notes |
+|---|---|
+| `AppBlocker.exe` | Single self-contained executable (~80–120 MB) |
+
+The .NET 8 runtime and all managed assemblies are bundled inside the EXE — copy just the one file to the target machine, no installer needed.
+
+### SQLite native library note
+
+SQLite uses a native DLL (`e_sqlite3.dll`) that cannot be embedded inside the EXE itself. The publish profile sets `IncludeNativeLibrariesForSelfExtract=true`, so .NET extracts it to `%TEMP%\.net\AppBlocker\<hash>\` on first launch and reuses it on subsequent runs. This is invisible to the user and completes in under a second. If the extraction folder is deleted (e.g. by a disk-cleanup tool), it is recreated automatically on next launch.
+
+### Windows Defender note
+
+AppBlocker terminates processes by design. Windows Defender may flag the executable for this behaviour or for the self-extracting native library — this is a false positive. If Defender blocks the app:
+
+1. Open **Windows Security → Virus & threat protection → Protection history**.
+2. Find the quarantined item and choose **Restore** or **Allow**.
+3. Add the publish folder as an exclusion if the false positive recurs.
+
+Running from a developer build (`dotnet run`) is unaffected.
 
 ## Data Storage
 
