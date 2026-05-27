@@ -27,7 +27,7 @@
                 </Grid.RowDefinitions>
 
                 <TextBlock Grid.Row="0"
-                           Text="Програми"
+                           Text="Applications"
                            FontWeight="SemiBold"
                            Margin="8,8,8,4"/>
 
@@ -38,7 +38,7 @@
                               SelectionMode="Single"
                               Margin="8,0,4,8"/>
 
-                    <TextBlock Text="Список порожній."
+                    <TextBlock Text="The list is empty."
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center"
                                Foreground="Gray"
@@ -68,11 +68,11 @@
                                FontWeight="SemiBold"
                                Visibility="{Binding SelectedApp,
                                    Converter={StaticResource NullToVisibilityConverter}}">
-                        <Run Text="Розклади для: "/>
+                        <Run Text="Schedules for: "/>
                         <Run Text="{Binding SelectedApp.Name}"/>
                     </TextBlock>
 
-                    <TextBlock Text="Оберіть програму зі списку"
+                    <TextBlock Text="Select an application from the list"
                                Margin="8,8,8,4"
                                Foreground="Gray">
                         <TextBlock.Style>
@@ -95,7 +95,7 @@
                               Margin="8,0,8,4">
                         <ListView.View>
                             <GridView>
-                                <GridViewColumn Header="Дія" Width="130">
+                                <GridViewColumn Header="Action" Width="130">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding Label}"
@@ -104,7 +104,7 @@
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
 
-                                <GridViewColumn Header="Активний" Width="70">
+                                <GridViewColumn Header="Active" Width="70">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <CheckBox IsChecked="{Binding IsEnabled, Mode=OneWay}"
@@ -132,7 +132,7 @@
                         </ListView.View>
                     </ListView>
 
-                    <TextBlock Text="Немає розкладів. Додайте новий нижче."
+                    <TextBlock Text="No schedules. Add one below."
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center"
                                Foreground="Gray"
@@ -147,13 +147,13 @@
                         Padding="8,8"
                         Visibility="{Binding SelectedApp, Converter={StaticResource NullToVisibilityConverter}}">
                     <StackPanel>
-                        <TextBlock Text="Додати вікно блокування:"
+                        <TextBlock Text="Add blocking window:"
                                    FontWeight="SemiBold"
                                    Margin="0,0,0,6"/>
 
                         <!-- Time row -->
                         <WrapPanel Orientation="Horizontal" Margin="0,0,0,4">
-                            <TextBlock Text="З " VerticalAlignment="Center"/>
+                            <TextBlock Text="From " VerticalAlignment="Center"/>
                             <TextBox Width="30"
                                      Text="{Binding StartHour, UpdateSourceTrigger=PropertyChanged}"
                                      VerticalAlignment="Center"/>
@@ -161,7 +161,7 @@
                             <TextBox Width="30"
                                      Text="{Binding StartMinute, UpdateSourceTrigger=PropertyChanged}"
                                      VerticalAlignment="Center"/>
-                            <TextBlock Text="   до   " VerticalAlignment="Center" Margin="4,0"/>
+                            <TextBlock Text="   to   " VerticalAlignment="Center" Margin="4,0"/>
                             <TextBox Width="30"
                                      Text="{Binding EndHour, UpdateSourceTrigger=PropertyChanged}"
                                      VerticalAlignment="Center"/>
@@ -173,17 +173,17 @@
 
                         <!-- Days row -->
                         <WrapPanel Orientation="Horizontal" Margin="0,0,0,6">
-                            <CheckBox Content="Пн" IsChecked="{Binding DayMon}" Margin="0,0,8,0"/>
-                            <CheckBox Content="Вт" IsChecked="{Binding DayTue}" Margin="0,0,8,0"/>
-                            <CheckBox Content="Ср" IsChecked="{Binding DayWed}" Margin="0,0,8,0"/>
-                            <CheckBox Content="Чт" IsChecked="{Binding DayThu}" Margin="0,0,8,0"/>
-                            <CheckBox Content="Пт" IsChecked="{Binding DayFri}" Margin="0,0,8,0"/>
-                            <CheckBox Content="Сб" IsChecked="{Binding DaySat}" Margin="0,0,8,0"/>
-                            <CheckBox Content="Нд" IsChecked="{Binding DaySun}"/>
+                            <CheckBox Content="Mon" IsChecked="{Binding DayMon}" Margin="0,0,8,0"/>
+                            <CheckBox Content="Tue" IsChecked="{Binding DayTue}" Margin="0,0,8,0"/>
+                            <CheckBox Content="Wed" IsChecked="{Binding DayWed}" Margin="0,0,8,0"/>
+                            <CheckBox Content="Thu" IsChecked="{Binding DayThu}" Margin="0,0,8,0"/>
+                            <CheckBox Content="Fri" IsChecked="{Binding DayFri}" Margin="0,0,8,0"/>
+                            <CheckBox Content="Sat" IsChecked="{Binding DaySat}" Margin="0,0,8,0"/>
+                            <CheckBox Content="Sun" IsChecked="{Binding DaySun}"/>
                         </WrapPanel>
 
                         <!-- Add button -->
-                        <Button Content="+ Додати розклад"
+                        <Button Content="+ Add schedule"
                                 Command="{Binding AddWindowCommand}"
                                 IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                                 HorizontalAlignment="Left"

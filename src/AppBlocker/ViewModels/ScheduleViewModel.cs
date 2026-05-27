@@ -114,20 +114,20 @@ public partial class ScheduleViewModel : ObservableObject
     {
         if (SelectedApp is null)
         {
-            StatusMessage = "Оберіть програму зі списку.";
+            StatusMessage = "Select an application from the list.";
             return;
         }
 
         var days = BuildDaysString();
         if (days is null)
         {
-            StatusMessage = "Оберіть хоча б один день тижня.";
+            StatusMessage = "Select at least one day of the week.";
             return;
         }
 
         if (!IsValidTime(StartHour, StartMinute) || !IsValidTime(EndHour, EndMinute))
         {
-            StatusMessage = "Перевірте значення часу (год 0-23, хв 0-59).";
+            StatusMessage = "Invalid time value (hour 0-23, minute 0-59).";
             return;
         }
 
@@ -151,12 +151,12 @@ public partial class ScheduleViewModel : ObservableObject
 
             await _schedulerService.ScheduleAppAsync(SelectedApp.Id);
             await LoadSchedulesAsync(SelectedApp.Id);
-            StatusMessage = "Розклад додано.";
+            StatusMessage = "Schedule added.";
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to add schedule window.");
-            StatusMessage = "Помилка при додаванні розкладу.";
+            StatusMessage = "Failed to add schedule.";
         }
         finally
         {
@@ -184,12 +184,12 @@ public partial class ScheduleViewModel : ObservableObject
             await _schedulerService.UnscheduleAppAsync(item.BlockedAppId);
             await _schedulerService.ScheduleAppAsync(item.BlockedAppId);
             await LoadSchedulesAsync(item.BlockedAppId);
-            StatusMessage = "Розклад видалено.";
+            StatusMessage = "Schedule removed.";
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to remove schedule {Id}.", item.Id);
-            StatusMessage = "Помилка при видаленні розкладу.";
+            StatusMessage = "Failed to remove schedule.";
         }
         finally
         {
@@ -219,7 +219,7 @@ public partial class ScheduleViewModel : ObservableObject
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to toggle schedule {Id}.", item.Id);
-            StatusMessage = "Помилка при зміні стану розкладу.";
+            StatusMessage = "Failed to toggle schedule.";
         }
         finally
         {
@@ -255,9 +255,9 @@ public partial class ScheduleViewModel : ObservableObject
 
         string time = $"{int.Parse(parts[2]):D2}:{int.Parse(parts[1]):D2}";
         string days = parts[5]
-            .Replace("MON", "пн").Replace("TUE", "вт").Replace("WED", "ср")
-            .Replace("THU", "чт").Replace("FRI", "пт").Replace("SAT", "сб").Replace("SUN", "нд");
-        string action = enables ? "Увімкнути" : "Вимкнути";
+            .Replace("MON", "Mon").Replace("TUE", "Tue").Replace("WED", "Wed")
+            .Replace("THU", "Thu").Replace("FRI", "Fri").Replace("SAT", "Sat").Replace("SUN", "Sun");
+        string action = enables ? "Enable" : "Disable";
         return $"{action}  {time}  ({days})";
     }
 }

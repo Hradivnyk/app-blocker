@@ -14,7 +14,7 @@
 
         <!-- Toolbar -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="8,8,8,4">
-            <Button Content="+ Додати"
+            <Button Content="+ Add"
                     Command="{Binding AddAppCommand}"
                     IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                     Padding="12,4"/>
@@ -27,7 +27,7 @@
                       Margin="8,0,8,0">
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Header="Програма" Width="300">
+                        <GridViewColumn Header="Application" Width="300">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
@@ -35,7 +35,7 @@
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
 
-                        <GridViewColumn Header="Увімкнено" Width="80">
+                        <GridViewColumn Header="Enabled" Width="80">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <CheckBox IsChecked="{Binding IsEnabled, Mode=OneWay}"
@@ -64,7 +64,7 @@
             </ListView>
 
             <!-- Empty state overlay -->
-            <TextBlock Text="Список порожній. Натисніть «+ Додати», щоб додати програму."
+            <TextBlock Text="The list is empty. Click &quot;+ Add&quot; to add an application."
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"
                        Foreground="Gray"
