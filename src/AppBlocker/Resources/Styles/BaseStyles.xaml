@@ -1,6 +1,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:converters="clr-namespace:AppBlocker.Converters">
-    <!-- Base styles. Full theme added in Step 6+. -->
     <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
+    <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
 </ResourceDictionary>
