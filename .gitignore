@@ -1,0 +1,56 @@
+# Build output
+bin/
+obj/
+out/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+!**/packages/build/
+nuget.config.local
+
+# EF Core migrations — зберігати snapshot, але ігнорувати скомпільований вивід
+# (migrations самі по собі зберігаються в git)
+
+# SQLite база даних (runtime data, не в репо)
+*.db
+*.db-shm
+*.db-wal
+
+# Логи (Serilog)
+logs/
+*.log
+
+# Publish output
+publish/
+*.exe
+*.pdb
+*.ilk
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# dotnet tools
+.dotnet/
+.tools/
+
+# Test results
+TestResults/
+coverage/
+*.trx
+*.coverage
+*.coveragexml
