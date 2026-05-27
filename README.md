@@ -1,68 +1,68 @@
 # AppBlocker
 
-Windows-застосунок для блокування запуску програм за розкладом. Живе в system tray, запускається з системою та у фоні завершує процеси заблокованих програм у вказані часові інтервали.
+A Windows application for blocking program launches on a schedule. Lives in the system tray, starts with Windows, and silently terminates blocked applications during specified time intervals.
 
-## Можливості
+## Features
 
-- Блокування будь-яких програм за розкладом (Cron-вирази)
-- Миттєве сповіщення при спробі відкрити заблоковану програму з часом розблокування
-- Тимчасове розблокування окремої програми на 1–15 хвилин (з таймером підтвердження 30 сек)
-- Зупинка поточної сесії блокування до кінця інтервалу (з таймером підтвердження 60 сек)
-- Автозапуск з Windows без показу вікна
-- Одна програма може мати кілька незалежних розкладів
+- Block any application on a schedule (Cron expressions)
+- Instant notification when a blocked app is launched, showing the unblock time
+- Temporary unblock of an individual app for 1–15 minutes (with 30-second confirmation timer)
+- Stop the current blocking session until the end of the interval (with 60-second confirmation timer)
+- Auto-startup with Windows without showing a window
+- One app can have multiple independent schedules
 
-## Стек
+## Stack
 
-| Компонент | Технологія |
+| Component | Technology |
 |-----------|-----------|
-| Мова | C# 12, .NET 8 |
+| Language | C# 12, .NET 8 |
 | UI | WPF + MVVM (CommunityToolkit.Mvvm) |
 | Tray | H.NotifyIcon.Wpf |
-| База даних | SQLite + Entity Framework Core 8 |
-| Розклад | Quartz.NET 3 |
+| Database | SQLite + Entity Framework Core 8 |
+| Scheduler | Quartz.NET 3 |
 | DI | Microsoft.Extensions.Hosting |
-| Логування | Serilog (файл + Debug) |
+| Logging | Serilog (file + Debug) |
 
-## Вимоги
+## Requirements
 
 - Windows 10 / 11
-- [.NET 8 Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (або self-contained публікація)
+- [.NET 8 Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (or use self-contained publish)
 
-## Збірка та запуск
+## Build & Run
 
 ```bash
-# Клонувати репозиторій
+# Clone the repository
 git clone <repo-url>
 cd apps-blocker
 
-# Відновити залежності
+# Restore dependencies
 dotnet restore
 
-# Зібрати
+# Build
 dotnet build
 
-# Запустити
+# Run
 dotnet run --project src/AppBlocker
 ```
 
-## Публікація (self-contained .exe)
+## Publish (self-contained .exe)
 
 ```bash
 dotnet publish src/AppBlocker -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
 ```
 
-Готовий файл буде у `src/AppBlocker/bin/Release/net8.0-windows/win-x64/publish/`.
+The output file will be in `src/AppBlocker/bin/Release/net8.0-windows/win-x64/publish/`.
 
-## Структура даних
+## Data Storage
 
-База даних SQLite зберігається у `%AppData%\AppBlocker\appblocker.db` і створюється автоматично при першому запуску.
+The SQLite database is stored at `%AppData%\AppBlocker\appblocker.db` and is created automatically on first run.
 
-## Автозапуск
+## Auto-startup
 
-Увімкнення автозапуску доступне у вкладці **Налаштування**. Додаток записується до реєстру (`HKCU\...\Run`) і запускається мінімізовано у tray без показу вікна.
+Auto-startup can be enabled in the **Settings** tab. The app writes itself to the registry (`HKCU\...\Run`) and starts minimized to the tray without showing a window.
 
-## Важливо
+## Notes
 
-- Для блокування більшості програм права адміністратора **не потрібні**.
-- Windows Defender може реагувати на завершення процесів — це очікувана поведінка.
-- Застосунок працює в одному екземплярі; повторний запуск активує вже запущений.
+- Administrator rights are **not required** to block most applications.
+- Windows Defender may react to process termination — this is expected behavior.
+- The app runs as a single instance; launching it again activates the already running instance.
