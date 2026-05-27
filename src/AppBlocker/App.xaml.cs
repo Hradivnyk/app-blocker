@@ -76,6 +76,7 @@ public partial class App : Application
                 });
                 services.AddTransient<BlockingScheduleJob>();
 
+                services.AddSingleton<ISettingsService, SettingsService>();
                 services.AddSingleton<IBlockerService, BlockerService>();
                 services.AddSingleton<ISchedulerService, SchedulerService>();
                 services.AddSingleton<IStartupService, StartupService>();

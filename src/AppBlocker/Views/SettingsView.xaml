@@ -4,17 +4,89 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
-             d:DesignHeight="450" d:DesignWidth="600">
-    <Grid Margin="16">
-        <StackPanel>
-            <TextBlock Text="General"
-                       FontWeight="SemiBold"
-                       FontSize="14"
-                       Margin="0,0,0,12"/>
-            <CheckBox Content="Start with Windows"
-                      IsChecked="{Binding StartWithWindows, Mode=TwoWay}"
-                      IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
-                      VerticalContentAlignment="Center"/>
+             d:DesignHeight="520" d:DesignWidth="600">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="16" MaxWidth="520" HorizontalAlignment="Left">
+
+            <!-- General -->
+            <GroupBox Header="General" Margin="0,0,0,12" Padding="12">
+                <StackPanel>
+                    <CheckBox Content="Start with Windows"
+                              IsChecked="{Binding StartWithWindows, Mode=TwoWay}"
+                              IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
+                              VerticalContentAlignment="Center"/>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- Notifications -->
+            <GroupBox Header="Notifications" Margin="0,0,0,12" Padding="12">
+                <StackPanel>
+                    <CheckBox Content="Show notification when an app is blocked"
+                              IsChecked="{Binding ShowBlockNotification, Mode=TwoWay}"
+                              VerticalContentAlignment="Center"
+                              Margin="0,0,0,10"/>
+
+                    <StackPanel Orientation="Horizontal"
+                                IsEnabled="{Binding ShowBlockNotification}"
+                                VerticalAlignment="Center">
+                        <TextBlock Text="Auto-close after"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,8,0"/>
+                        <TextBox Width="48"
+                                 Text="{Binding NotificationAutoCloseSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 PreviewTextInput="NumericOnly_PreviewTextInput"
+                                 VerticalContentAlignment="Center"
+                                 TextAlignment="Center"/>
+                        <TextBlock Text="seconds  (5–30)"
+                                   VerticalAlignment="Center"
+                                   Foreground="Gray"
+                                   Margin="8,0,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- Blocking -->
+            <GroupBox Header="Blocking" Margin="0,0,0,12" Padding="12">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Default temporary unblock duration"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0"/>
+                    <TextBox Width="48"
+                             Text="{Binding DefaultTemporaryUnblockMinutes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PreviewTextInput="NumericOnly_PreviewTextInput"
+                             VerticalContentAlignment="Center"
+                             TextAlignment="Center"/>
+                    <TextBlock Text="minutes  (1–15)"
+                               VerticalAlignment="Center"
+                               Foreground="Gray"
+                               Margin="8,0,0,0"/>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- About -->
+            <GroupBox Header="About" Padding="12">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <TextBlock Text="AppBlocker"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,8,0"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding AppVersion, StringFormat='v{0}'}"
+                                   Foreground="Gray"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="Open logs folder"
+                                Command="{Binding OpenLogsFolderCommand}"
+                                Padding="10,4"
+                                Margin="0,0,8,0"/>
+                        <Button Content="Open data folder"
+                                Command="{Binding OpenDataFolderCommand}"
+                                Padding="10,4"/>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+
         </StackPanel>
-    </Grid>
+    </ScrollViewer>
 </UserControl>
