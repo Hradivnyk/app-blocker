@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Windows;
 using AppBlocker.Data;
+using AppBlocker.Models;
 using AppBlocker.ViewModels;
 using AppBlocker.Views;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +15,7 @@ public class BlockerService : IBlockerService
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<BlockerService> _logger;
+    private readonly ProcessWatcherService _processWatcher;
 
     private static readonly TimeSpan PollingInterval = TimeSpan.FromSeconds(2);
 
@@ -21,25 +23,39 @@ public class BlockerService : IBlockerService
     private readonly SemaphoreSlim _pollLock = new(1, 1);
     private readonly ConcurrentDictionary<int, DateTime> _temporaryUnblocks = new();
 
-    public BlockerService(IServiceScopeFactory scopeFactory, ILogger<BlockerService> logger)
+    public BlockerService(
+        IServiceScopeFactory scopeFactory,
+        ILogger<BlockerService> logger,
+        ProcessWatcherService processWatcher)
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
+        _processWatcher = processWatcher;
     }
 
-    public Task StartAsync(CancellationToken cancellationToken = default)
+    public async Task StartAsync(CancellationToken cancellationToken = default)
     {
+        await RefreshWatchedNamesAsync(cancellationToken);
+
+        _processWatcher.ProcessStarted = OnWmiProcessStarted;
+        bool wmiOk = await _processWatcher.StartAsync(cancellationToken);
+
+        // Keep polling timer running as a safety net regardless of WMI availability
         _pollingTimer = new System.Threading.Timer(OnPollTick, null, TimeSpan.Zero, PollingInterval);
-        _logger.LogInformation("BlockerService started (polling every {Interval}s).", PollingInterval.TotalSeconds);
-        return Task.CompletedTask;
+
+        _logger.LogInformation("BlockerService started ({Mode}).",
+            wmiOk ? "WMI + polling safety net" : "polling only");
     }
 
-    public Task StopAsync(CancellationToken cancellationToken = default)
+    public async Task StopAsync(CancellationToken cancellationToken = default)
     {
         _pollingTimer?.Dispose();
         _pollingTimer = null;
+
+        _processWatcher.ProcessStarted = null;
+        await _processWatcher.StopAsync(cancellationToken);
+
         _logger.LogInformation("BlockerService stopped.");
-        return Task.CompletedTask;
     }
 
     public async Task EnableBlockingForAppAsync(int blockedAppId, CancellationToken cancellationToken = default)
@@ -53,6 +69,7 @@ public class BlockerService : IBlockerService
 
         app.IsEnabled = true;
         await db.SaveChangesAsync(cancellationToken);
+        _processWatcher.Watch(app.Name);
         _logger.LogInformation("Blocking enabled for '{Name}' (Id={Id}).", app.Name, app.Id);
     }
 
@@ -65,6 +82,7 @@ public class BlockerService : IBlockerService
 
         app.IsEnabled = false;
         await db.SaveChangesAsync(cancellationToken);
+        _processWatcher.Unwatch(app.Name);
         _logger.LogInformation("Blocking disabled for '{Name}' (Id={Id}).", app.Name, app.Id);
     }
 
@@ -77,6 +95,41 @@ public class BlockerService : IBlockerService
         return Task.CompletedTask;
     }
 
+    // WMI event path — called from ProcessWatcherService on a ThreadPool thread
+    private void OnWmiProcessStarted(string processName, int pid)
+        => _ = HandleProcessStartAsync(processName);
+
+    private async Task HandleProcessStartAsync(string processName)
+    {
+        List<BlockedApp> blockedApps;
+        using (var scope = _scopeFactory.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            blockedApps = await db.BlockedApps
+                .Where(a => a.IsEnabled && a.Name == processName)
+                .ToListAsync();
+        }
+
+        foreach (var app in blockedApps)
+        {
+            if (_temporaryUnblocks.TryGetValue(app.Id, out var expiry) && DateTime.UtcNow < expiry)
+                continue;
+
+            KillBlockedProcesses(app.Name);
+            break;
+        }
+    }
+
+    private async Task RefreshWatchedNamesAsync(CancellationToken ct = default)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var apps = await db.BlockedApps.Where(a => a.IsEnabled).ToListAsync(ct);
+        foreach (var app in apps)
+            _processWatcher.Watch(app.Name);
+    }
+
+    // Polling safety net path
     private async void OnPollTick(object? state)
     {
         if (!await _pollLock.WaitAsync(0)) return;
@@ -96,7 +149,7 @@ public class BlockerService : IBlockerService
 
     private async Task PollAsync()
     {
-        List<Models.BlockedApp> blockedApps;
+        List<BlockedApp> blockedApps;
         using (var scope = _scopeFactory.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
