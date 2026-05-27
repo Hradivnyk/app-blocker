@@ -3,6 +3,7 @@ using System.Threading;
 using System.Windows;
 using AppBlocker.Data;
 using AppBlocker.Services;
+using AppBlocker.Services.Jobs;
 using AppBlocker.Tray;
 using AppBlocker.ViewModels;
 using AppBlocker.Views;
@@ -73,6 +74,7 @@ public partial class App : Application
                 {
                     options.WaitForJobsToComplete = true;
                 });
+                services.AddTransient<BlockingScheduleJob>();
 
                 services.AddSingleton<IBlockerService, BlockerService>();
                 services.AddSingleton<ISchedulerService, SchedulerService>();
@@ -113,6 +115,9 @@ public partial class App : Application
 
         var blocker = _host.Services.GetRequiredService<IBlockerService>();
         await blocker.StartAsync();
+
+        var schedulerService = _host.Services.GetRequiredService<ISchedulerService>();
+        await schedulerService.InitializeAsync();
 
         if (!startMinimized)
         {

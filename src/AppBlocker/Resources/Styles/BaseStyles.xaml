@@ -3,4 +3,5 @@
                     xmlns:converters="clr-namespace:AppBlocker.Converters">
     <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
     <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
+    <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
 </ResourceDictionary>
