@@ -198,6 +198,41 @@ dotnet publish src/AppBlocker -c Release -r win-x64 --self-contained true -p:Pub
 
 ---
 
+## Git-конвенції
+
+### Гілки (Git Flow)
+
+- `main` — стабільний реліз
+- `develop` — основна гілка розробки
+- `feature/<назва>` — нова функціональність (від `develop`)
+- `fix/<назва>` — виправлення багів (від `develop`)
+- `hotfix/<назва>` — термінові виправлення продакшну (від `main`)
+- `release/<версія>` — підготовка релізу (від `develop`)
+
+### Коміти (Conventional Commits)
+
+Формат: `<тип>(<scope>): <стислий опис>`
+
+Типи:
+- `feat` — нова функція
+- `fix` — виправлення бага
+- `refactor` — рефакторинг без зміни поведінки
+- `style` — форматування, відступи (без логічних змін)
+- `test` — тести
+- `docs` — документація
+- `chore` — залежності, конфіги, білд
+
+Правила:
+- Опис — стисло, у форматі `що було зроблено` (без розлогих пояснень)
+- **Ніколи** не додавати `Co-Authored-By` або будь-які згадки авторства Claude у коміти
+- Приклади:
+  - `feat(blocker): add WMI process watcher`
+  - `fix(scheduler): restore jobs on app startup`
+  - `refactor(tray): lazy init main window`
+  - `chore: add Quartz.NET and EF Core packages`
+
+---
+
 ## Конвенції коду
 
 - Неймінг: `PascalCase` для публічних членів, `_camelCase` для приватних полів.
