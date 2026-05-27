@@ -62,8 +62,8 @@ public partial class AppsViewModel : ObservableObject
     {
         var dialog = new OpenFileDialog
         {
-            Title = "Оберіть програму для блокування",
-            Filter = "Виконувані файли (*.exe)|*.exe",
+            Title = "Select an application to block",
+            Filter = "Executable files (*.exe)|*.exe",
             CheckFileExists = true,
         };
 
@@ -77,7 +77,7 @@ public partial class AppsViewModel : ObservableObject
         bool exists = await db.BlockedApps.AnyAsync(a => a.Name == appName);
         if (exists)
         {
-            StatusMessage = $"'{appName}' вже є в списку.";
+            StatusMessage = $"'{appName}' is already in the list.";
             return;
         }
 
@@ -86,7 +86,7 @@ public partial class AppsViewModel : ObservableObject
 
         _logger.LogInformation("Added blocked app '{Name}'.", appName);
         await LoadAsync();
-        StatusMessage = $"'{appName}' додано.";
+        StatusMessage = $"'{appName}' added.";
     }
 
     [RelayCommand(CanExecute = nameof(CanModify))]
@@ -105,7 +105,7 @@ public partial class AppsViewModel : ObservableObject
 
         _logger.LogInformation("Removed blocked app '{Name}'.", item.Name);
         Apps.Remove(item);
-        StatusMessage = $"'{item.Name}' видалено.";
+        StatusMessage = $"'{item.Name}' removed.";
     }
 
     [RelayCommand(CanExecute = nameof(CanModify))]

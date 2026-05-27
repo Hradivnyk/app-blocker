@@ -23,7 +23,7 @@
         <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
             <TextBlock VerticalAlignment="Center"
                        Margin="0,0,10,0"
-                       Text="{Binding Countdown, StringFormat='Закриється через {0} с'}"/>
+                       Text="{Binding Countdown, StringFormat='Closes in {0} s'}"/>
             <Button Content="OK" Width="60" Command="{Binding CloseCommand}"/>
         </StackPanel>
     </Grid>

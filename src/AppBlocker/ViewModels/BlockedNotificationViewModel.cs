@@ -19,7 +19,7 @@ public partial class BlockedNotificationViewModel : ObservableObject
 
     public BlockedNotificationViewModel(string appName)
     {
-        Message = $"{appName} заблоковано";
+        Message = $"{appName} is blocked";
 
         _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _timer.Tick += OnTimerTick;

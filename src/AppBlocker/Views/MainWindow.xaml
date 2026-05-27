@@ -11,13 +11,13 @@
         WindowStartupLocation="CenterScreen">
     <Grid>
         <TabControl>
-            <TabItem Header="Програми">
+            <TabItem Header="Applications">
                 <views:AppsView />
             </TabItem>
-            <TabItem Header="Розклад">
+            <TabItem Header="Schedule">
                 <views:ScheduleView />
             </TabItem>
-            <TabItem Header="Налаштування">
+            <TabItem Header="Settings">
                 <views:SettingsView />
             </TabItem>
         </TabControl>
