@@ -6,6 +6,77 @@
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="600">
     <Grid>
-        <TextBlock Text="Apps View — Stub" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Toolbar -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="8,8,8,4">
+            <Button Content="+ Додати"
+                    Command="{Binding AddAppCommand}"
+                    IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                    Padding="12,4"/>
+        </StackPanel>
+
+        <!-- List area -->
+        <Grid Grid.Row="1">
+            <ListView ItemsSource="{Binding Apps}"
+                      SelectedItem="{Binding SelectedApp}"
+                      Margin="8,0,8,0">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="Програма" Width="300">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+
+                        <GridViewColumn Header="Увімкнено" Width="80">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsEnabled, Mode=OneWay}"
+                                              HorizontalAlignment="Center"
+                                              Command="{Binding DataContext.ToggleEnabledCommand,
+                                                  RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                              CommandParameter="{Binding}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+
+                        <GridViewColumn Header="" Width="60">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Content="✕"
+                                            Width="32" Height="22"
+                                            Padding="0"
+                                            Command="{Binding DataContext.RemoveAppCommand,
+                                                RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+
+            <!-- Empty state overlay -->
+            <TextBlock Text="Список порожній. Натисніть «+ Додати», щоб додати програму."
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Foreground="Gray"
+                       Visibility="{Binding Apps.Count,
+                           Converter={StaticResource CountToVisibilityConverter}}"/>
+        </Grid>
+
+        <!-- Status bar -->
+        <TextBlock Grid.Row="2"
+                   Text="{Binding StatusMessage}"
+                   Margin="10,4,8,6"
+                   Foreground="Gray"
+                   FontSize="11"/>
     </Grid>
 </UserControl>

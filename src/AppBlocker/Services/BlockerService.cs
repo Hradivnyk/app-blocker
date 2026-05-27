@@ -1,43 +1,175 @@
+using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Windows;
+using AppBlocker.Data;
+using AppBlocker.ViewModels;
+using AppBlocker.Views;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace AppBlocker.Services;
 
 public class BlockerService : IBlockerService
 {
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<BlockerService> _logger;
 
-    public BlockerService(ILogger<BlockerService> logger)
+    private static readonly TimeSpan PollingInterval = TimeSpan.FromSeconds(2);
+
+    private System.Threading.Timer? _pollingTimer;
+    private readonly SemaphoreSlim _pollLock = new(1, 1);
+    private readonly ConcurrentDictionary<int, DateTime> _temporaryUnblocks = new();
+
+    public BlockerService(IServiceScopeFactory scopeFactory, ILogger<BlockerService> logger)
     {
+        _scopeFactory = scopeFactory;
         _logger = logger;
     }
 
     public Task StartAsync(CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("BlockerService started (stub).");
+        _pollingTimer = new System.Threading.Timer(OnPollTick, null, TimeSpan.Zero, PollingInterval);
+        _logger.LogInformation("BlockerService started (polling every {Interval}s).", PollingInterval.TotalSeconds);
         return Task.CompletedTask;
     }
 
     public Task StopAsync(CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("BlockerService stopped (stub).");
+        _pollingTimer?.Dispose();
+        _pollingTimer = null;
+        _logger.LogInformation("BlockerService stopped.");
         return Task.CompletedTask;
     }
 
-    public Task EnableBlockingForAppAsync(int blockedAppId, CancellationToken cancellationToken = default)
+    public async Task EnableBlockingForAppAsync(int blockedAppId, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("EnableBlocking app {Id} (stub).", blockedAppId);
-        return Task.CompletedTask;
+        _temporaryUnblocks.TryRemove(blockedAppId, out _);
+
+        using var scope = _scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var app = await db.BlockedApps.FindAsync(new object[] { blockedAppId }, cancellationToken);
+        if (app is null) return;
+
+        app.IsEnabled = true;
+        await db.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation("Blocking enabled for '{Name}' (Id={Id}).", app.Name, app.Id);
     }
 
-    public Task DisableBlockingForAppAsync(int blockedAppId, CancellationToken cancellationToken = default)
+    public async Task DisableBlockingForAppAsync(int blockedAppId, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("DisableBlocking app {Id} (stub).", blockedAppId);
-        return Task.CompletedTask;
+        using var scope = _scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var app = await db.BlockedApps.FindAsync(new object[] { blockedAppId }, cancellationToken);
+        if (app is null) return;
+
+        app.IsEnabled = false;
+        await db.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation("Blocking disabled for '{Name}' (Id={Id}).", app.Name, app.Id);
     }
 
     public Task TemporarilyUnblockAsync(int blockedAppId, TimeSpan duration, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("TemporarilyUnblock app {Id} for {Duration} (stub).", blockedAppId, duration);
+        var expiry = DateTime.UtcNow + duration;
+        _temporaryUnblocks[blockedAppId] = expiry;
+        _logger.LogInformation("App {Id} temporarily unblocked for {Duration} (expires {Expiry:HH:mm:ss} UTC).",
+            blockedAppId, duration, expiry);
         return Task.CompletedTask;
+    }
+
+    private async void OnPollTick(object? state)
+    {
+        if (!await _pollLock.WaitAsync(0)) return;
+        try
+        {
+            await PollAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled error in BlockerService poll tick.");
+        }
+        finally
+        {
+            _pollLock.Release();
+        }
+    }
+
+    private async Task PollAsync()
+    {
+        List<Models.BlockedApp> blockedApps;
+        using (var scope = _scopeFactory.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            blockedApps = await db.BlockedApps.Where(a => a.IsEnabled).ToListAsync();
+        }
+
+        foreach (var app in blockedApps)
+        {
+            if (_temporaryUnblocks.TryGetValue(app.Id, out var expiry))
+            {
+                if (DateTime.UtcNow < expiry) continue;
+                _temporaryUnblocks.TryRemove(app.Id, out _);
+                _logger.LogInformation("Temporary unblock expired for '{Name}' (Id={Id}).", app.Name, app.Id);
+            }
+
+            KillBlockedProcesses(app.Name);
+        }
+    }
+
+    private void KillBlockedProcesses(string appName)
+    {
+        int currentSessionId = Process.GetCurrentProcess().SessionId;
+
+        Process[] processes;
+        try
+        {
+            processes = Process.GetProcessesByName(appName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to enumerate processes for '{AppName}'.", appName);
+            return;
+        }
+
+        foreach (var process in processes)
+        {
+            try
+            {
+                if (process.SessionId != currentSessionId)
+                {
+                    process.Dispose();
+                    continue;
+                }
+
+                int pid = process.Id;
+                process.Kill();
+
+                bool exited = process.WaitForExit(1000);
+                if (!exited || !process.HasExited)
+                    _logger.LogWarning("Process '{AppName}' (PID {Pid}) may still be running after kill.", appName, pid);
+                else
+                    _logger.LogInformation("Killed process '{AppName}' (PID {Pid}).", appName, pid);
+
+                ShowBlockedNotification(appName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error killing '{AppName}' (PID {Pid}).", appName, process.Id);
+            }
+            finally
+            {
+                process.Dispose();
+            }
+        }
+    }
+
+    private static void ShowBlockedNotification(string appName)
+    {
+        Application.Current.Dispatcher.BeginInvoke(() =>
+        {
+            var vm = new BlockedNotificationViewModel(appName);
+            var window = new BlockedNotificationWindow(vm);
+            window.Show();
+        });
     }
 }
