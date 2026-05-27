@@ -14,5 +14,7 @@ public class BlockSchedule
 
     public bool IsEnabled { get; set; } = true;
 
+    public bool EnablesBlocking { get; set; } = true;
+
     public BlockedApp? BlockedApp { get; set; }
 }
