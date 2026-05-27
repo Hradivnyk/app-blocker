@@ -4,8 +4,200 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
-             d:DesignHeight="450" d:DesignWidth="600">
+             d:DesignHeight="450" d:DesignWidth="700">
     <Grid>
-        <TextBlock Text="Schedule View — Stub" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Main two-panel area -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220" MinWidth="120"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left panel: apps list -->
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0"
+                           Text="Програми"
+                           FontWeight="SemiBold"
+                           Margin="8,8,8,4"/>
+
+                <Grid Grid.Row="1">
+                    <ListView ItemsSource="{Binding Apps}"
+                              SelectedItem="{Binding SelectedApp}"
+                              DisplayMemberPath="Name"
+                              SelectionMode="Single"
+                              Margin="8,0,4,8"/>
+
+                    <TextBlock Text="Список порожній."
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Foreground="Gray"
+                               Visibility="{Binding Apps.Count,
+                                   Converter={StaticResource CountToVisibilityConverter}}"/>
+                </Grid>
+            </Grid>
+
+            <!-- Splitter -->
+            <GridSplitter Grid.Column="1"
+                          Width="4"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Stretch"
+                          Background="LightGray"/>
+
+            <!-- Right panel: schedules -->
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header -->
+                <StackPanel Grid.Row="0">
+                    <TextBlock Margin="8,8,8,4"
+                               FontWeight="SemiBold"
+                               Visibility="{Binding SelectedApp,
+                                   Converter={StaticResource NullToVisibilityConverter}}">
+                        <Run Text="Розклади для: "/>
+                        <Run Text="{Binding SelectedApp.Name}"/>
+                    </TextBlock>
+
+                    <TextBlock Text="Оберіть програму зі списку"
+                               Margin="8,8,8,4"
+                               Foreground="Gray">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedApp}" Value="{x:Null}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+
+                <!-- Schedules list -->
+                <Grid Grid.Row="1"
+                      Visibility="{Binding SelectedApp, Converter={StaticResource NullToVisibilityConverter}}">
+                    <ListView ItemsSource="{Binding Schedules}"
+                              Margin="8,0,8,4">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Дія" Width="130">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Label}"
+                                                       VerticalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Header="Активний" Width="70">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding IsEnabled, Mode=OneWay}"
+                                                      HorizontalAlignment="Center"
+                                                      Command="{Binding DataContext.ToggleScheduleCommand,
+                                                          RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                      CommandParameter="{Binding}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Header="" Width="44">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Button Content="✕"
+                                                    Width="32" Height="22"
+                                                    Padding="0"
+                                                    Command="{Binding DataContext.RemoveScheduleCommand,
+                                                        RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+
+                    <TextBlock Text="Немає розкладів. Додайте новий нижче."
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Foreground="Gray"
+                               Visibility="{Binding Schedules.Count,
+                                   Converter={StaticResource CountToVisibilityConverter}}"/>
+                </Grid>
+
+                <!-- Add form -->
+                <Border Grid.Row="2"
+                        BorderBrush="LightGray"
+                        BorderThickness="0,1,0,0"
+                        Padding="8,8"
+                        Visibility="{Binding SelectedApp, Converter={StaticResource NullToVisibilityConverter}}">
+                    <StackPanel>
+                        <TextBlock Text="Додати вікно блокування:"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,6"/>
+
+                        <!-- Time row -->
+                        <WrapPanel Orientation="Horizontal" Margin="0,0,0,4">
+                            <TextBlock Text="З " VerticalAlignment="Center"/>
+                            <TextBox Width="30"
+                                     Text="{Binding StartHour, UpdateSourceTrigger=PropertyChanged}"
+                                     VerticalAlignment="Center"/>
+                            <TextBlock Text=" : " VerticalAlignment="Center"/>
+                            <TextBox Width="30"
+                                     Text="{Binding StartMinute, UpdateSourceTrigger=PropertyChanged}"
+                                     VerticalAlignment="Center"/>
+                            <TextBlock Text="   до   " VerticalAlignment="Center" Margin="4,0"/>
+                            <TextBox Width="30"
+                                     Text="{Binding EndHour, UpdateSourceTrigger=PropertyChanged}"
+                                     VerticalAlignment="Center"/>
+                            <TextBlock Text=" : " VerticalAlignment="Center"/>
+                            <TextBox Width="30"
+                                     Text="{Binding EndMinute, UpdateSourceTrigger=PropertyChanged}"
+                                     VerticalAlignment="Center"/>
+                        </WrapPanel>
+
+                        <!-- Days row -->
+                        <WrapPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <CheckBox Content="Пн" IsChecked="{Binding DayMon}" Margin="0,0,8,0"/>
+                            <CheckBox Content="Вт" IsChecked="{Binding DayTue}" Margin="0,0,8,0"/>
+                            <CheckBox Content="Ср" IsChecked="{Binding DayWed}" Margin="0,0,8,0"/>
+                            <CheckBox Content="Чт" IsChecked="{Binding DayThu}" Margin="0,0,8,0"/>
+                            <CheckBox Content="Пт" IsChecked="{Binding DayFri}" Margin="0,0,8,0"/>
+                            <CheckBox Content="Сб" IsChecked="{Binding DaySat}" Margin="0,0,8,0"/>
+                            <CheckBox Content="Нд" IsChecked="{Binding DaySun}"/>
+                        </WrapPanel>
+
+                        <!-- Add button -->
+                        <Button Content="+ Додати розклад"
+                                Command="{Binding AddWindowCommand}"
+                                IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                                HorizontalAlignment="Left"
+                                Padding="10,4"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- Status bar -->
+        <TextBlock Grid.Row="1"
+                   Text="{Binding StatusMessage}"
+                   Margin="10,4,8,6"
+                   Foreground="Gray"
+                   FontSize="11"/>
     </Grid>
 </UserControl>
