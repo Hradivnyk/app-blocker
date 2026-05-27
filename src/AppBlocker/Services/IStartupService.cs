@@ -2,7 +2,7 @@ namespace AppBlocker.Services;
 
 public interface IStartupService
 {
-    bool IsStartupEnabled();
+    Task<bool> IsStartupEnabledAsync();
     Task EnableStartupAsync();
     Task DisableStartupAsync();
 }
