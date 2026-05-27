@@ -1,24 +1,25 @@
 # AppBlocker — CLAUDE.md
 
-## Опис проекту
+## Project Description
 
-Windows-додаток для блокування запуску програм за розкладом. Запускається з системою, живе в system tray, надає UI для керування списком заблокованих програм та розкладом блокування.
+A Windows application for blocking program launches on a schedule. Starts with the system, lives in the system tray, and provides a UI for managing the list of blocked applications and blocking schedules.
 
 ---
 
-## Стек
+## Stack
 
-- **Мова:** C# 12, .NET 8
+- **Language:** C# 12, .NET 8
 - **UI Framework:** WPF (XAML)
-- **Архітектура UI:** MVVM (CommunityToolkit.Mvvm)
-- **Tray-іконка:** `H.NotifyIcon.Wpf` (нативний WPF, без WindowsFormsIntegration)
-- **База даних:** SQLite через Entity Framework Core 8
-- **Розклад:** Quartz.NET
-- **DI-контейнер:** Microsoft.Extensions.DependencyInjection
-- **Логування:** Microsoft.Extensions.Logging + Serilog (файл + Debug output)
+- **UI Architecture:** MVVM (CommunityToolkit.Mvvm)
+- **Tray Icon:** `H.NotifyIcon.Wpf` (native WPF, no WindowsFormsIntegration)
+- **Database:** SQLite via Entity Framework Core 8
+- **Scheduler:** Quartz.NET
+- **DI Container:** Microsoft.Extensions.DependencyInjection
+- **Logging:** Microsoft.Extensions.Logging + Serilog (file + Debug output)
+
 ---
 
-## Структура проекту
+## Project Structure
 
 ```
 AppBlocker/
@@ -26,108 +27,108 @@ AppBlocker/
 ├── AppBlocker.sln
 ├── src/
 │   └── AppBlocker/
-│       ├── App.xaml                    # Точка входу; головне вікно НЕ показується при старті
-│       ├── App.xaml.cs                 # Ініціалізація DI, tray, сервісів
+│       ├── App.xaml                    # Entry point; main window is NOT shown on startup
+│       ├── App.xaml.cs                 # DI, tray, and service initialization
 │       │
 │       ├── Models/
-│       │   ├── BlockedApp.cs           # Модель заблокованої програми (EF Entity)
-│       │   └── BlockSchedule.cs        # Модель розкладу (EF Entity)
+│       │   ├── BlockedApp.cs           # Blocked application model (EF Entity)
+│       │   └── BlockSchedule.cs        # Schedule model (EF Entity)
 │       │
 │       ├── Data/
 │       │   ├── AppDbContext.cs         # EF Core DbContext
-│       │   └── Migrations/             # EF міграції (не редагувати вручну)
+│       │   └── Migrations/             # EF migrations (do not edit manually)
 │       │
 │       ├── Services/
 │       │   ├── IBlockerService.cs
-│       │   ├── BlockerService.cs       # Моніторинг процесів + kill логіка
+│       │   ├── BlockerService.cs       # Process monitoring + kill logic
 │       │   ├── ISchedulerService.cs
-│       │   ├── SchedulerService.cs     # Quartz.NET jobs; вмикає/вимикає блокування
+│       │   ├── SchedulerService.cs     # Quartz.NET jobs; enables/disables blocking
 │       │   ├── IStartupService.cs
-│       │   ├── StartupService.cs       # Запис/видалення з реєстру (HKCU Run)
-│       │   └── ProcessWatcherService.cs # Win32 WMI-підписка на створення процесів
+│       │   ├── StartupService.cs       # Registry write/remove (HKCU Run)
+│       │   └── ProcessWatcherService.cs # Win32 WMI subscription for process creation
 │       │
 │       ├── Tray/
-│       │   ├── TrayIconManager.cs      # NotifyIcon, контекстне меню
-│       │   └── TrayContextMenu.cs      # Пункти меню tray
+│       │   ├── TrayIconManager.cs      # NotifyIcon, context menu
+│       │   └── TrayContextMenu.cs      # Tray menu items
 │       │
 │       ├── ViewModels/
 │       │   ├── MainViewModel.cs
-│       │   ├── AppsViewModel.cs        # Список заблокованих програм
-│       │   ├── ScheduleViewModel.cs    # Керування розкладом
-│       │   └── SettingsViewModel.cs    # Автозапуск
+│       │   ├── AppsViewModel.cs        # Blocked apps list
+│       │   ├── ScheduleViewModel.cs    # Schedule management
+│       │   └── SettingsViewModel.cs    # Auto-startup
 │       │
 │       ├── Views/
-│       │   ├── MainWindow.xaml         # Shell-вікно з навігацією
+│       │   ├── MainWindow.xaml         # Shell window with navigation
 │       │   ├── AppsView.xaml
 │       │   ├── ScheduleView.xaml
 │       │   └── SettingsView.xaml
 │       │
-│       ├── Converters/                 # IValueConverter реалізації для XAML
+│       ├── Converters/                 # IValueConverter implementations for XAML
 │       ├── Resources/
-│       │   ├── Icons/                  # .ico файли для tray
-│       │   └── Styles/                 # ResourceDictionary зі стилями WPF
+│       │   ├── Icons/                  # .ico files for tray
+│       │   └── Styles/                 # ResourceDictionary with WPF styles
 │       │
 │       └── AppBlocker.csproj
 ```
 
 ---
 
-## Ключові правила реалізації
+## Key Implementation Rules
 
-### Блокування процесів
+### Process Blocking
 
-- Основний механізм: `WMI Win32_ProcessStartTrace` через `ManagementEventWatcher` — підписка на старт процесів, не polling.
-- Fallback: `System.Threading.Timer` з інтервалом 2 сек + `Process.GetProcessesByName()` якщо WMI недоступний.
-- Для kill використовувати `process.Kill()` + перевірити чи процес ще живий через `process.HasExited`.
-- **Ніколи** не вбивати процеси з `SessionId != Environment.SessionId` (щоб не зачепити системні).
-- Зберігати ім'я exe без розширення (наприклад `chrome`, не `chrome.exe`).
-- Після kill показувати WPF-вікно сповіщення (topmost, без taskbar кнопки) з повідомленням про блокування та часом розблокування (наприклад: _"Chrome заблоковано до 18:00"_). Вікно закривається кнопкою "OK" або автоматично через 10 секунд. Час відображати в local time.
+- Primary mechanism: `WMI Win32_ProcessStartTrace` via `ManagementEventWatcher` — subscribes to process start events, not polling.
+- Fallback: `System.Threading.Timer` with 2-second interval + `Process.GetProcessesByName()` if WMI is unavailable.
+- Use `process.Kill()` for killing + verify the process is gone via `process.HasExited`.
+- **Never** kill processes with `SessionId != Environment.SessionId` (to avoid touching system processes).
+- Store exe names without extension (e.g. `chrome`, not `chrome.exe`).
+- After killing, show a WPF notification window (topmost, no taskbar button) with a blocking message and unblock time (e.g. _"Chrome is blocked until 18:00"_). The window closes with an "OK" button or automatically after 10 seconds. Display time in local time.
 
-### Розклад (Quartz.NET)
+### Scheduler (Quartz.NET)
 
-- Кожен `BlockSchedule` — окремий Quartz Job з CronTrigger.
-- Формат Cron: Quartz 6-field (`seconds minutes hours day-of-month month day-of-week`), наприклад `0 0 9 ? * MON-FRI`.
-- При старті додатку відновлювати всі активні розклади з БД.
-- Використовувати `IScheduler.PauseAll()` / `IScheduler.ResumeAll()` для глобального призупинення.
-- Часовий пояс: завжди зберігати в UTC, відображати в local time.
+- Each `BlockSchedule` is a separate Quartz Job with a CronTrigger.
+- Cron format: Quartz 6-field (`seconds minutes hours day-of-month month day-of-week`), e.g. `0 0 9 ? * MON-FRI`.
+- On app startup, restore all active schedules from the database.
+- Use `IScheduler.PauseAll()` / `IScheduler.ResumeAll()` for global pause/resume.
+- Time zone: always store in UTC, display in local time.
 
-### Tray та вікно
+### Tray and Window
 
-- `App.xaml`: встановити `ShutdownMode="OnExplicitShutdown"`.
-- Головне вікно створювати **лінивo** — тільки при першому відкритті з tray.
-- При закритті вікна (`Window.Closing`) — ховати (`Hide()`), не закривати.
-- Справжнє закриття тільки через пункт "Вийти" в контекстному меню tray.
-- Подвійний клік на tray — показати/сховати вікно.
+- `App.xaml`: set `ShutdownMode="OnExplicitShutdown"`.
+- Create the main window **lazily** — only on first open from tray.
+- On window close (`Window.Closing`) — hide (`Hide()`), don't close.
+- True shutdown only via the "Exit" item in the tray context menu.
+- Double-click on tray icon — show/hide window.
 
-### Автозапуск
+### Auto-startup
 
-- Шлях до реєстру: `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run`
-- Ключ: `AppBlocker`
-- Значення: `"{шлях до exe}" --minimized`
-- Обробляти аргумент `--minimized` в `App.xaml.cs` — не показувати вікно при старті.
+- Registry path: `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run`
+- Key: `AppBlocker`
+- Value: `"{path to exe}" --minimized`
+- Handle the `--minimized` argument in `App.xaml.cs` — do not show window on startup.
 
-### База даних
+### Database
 
-- SQLite файл: `%AppData%\AppBlocker\appblocker.db`
-- Міграції застосовувати автоматично при старті (`context.Database.MigrateAsync()`).
-- `BlockedApp` і `BlockSchedule` — зв'язок один-до-багатьох (одна програма може мати кілька розкладів).
+- SQLite file: `%AppData%\AppBlocker\appblocker.db`
+- Apply migrations automatically on startup (`context.Database.MigrateAsync()`).
+- `BlockedApp` and `BlockSchedule` — one-to-many relationship (one app can have multiple schedules).
 
-### Тимчасове розблокування
+### Temporary Unblocking
 
-Доступно з UI додатку (вкладка або контекстне меню елемента списку):
+Available from the app UI (tab or list item context menu):
 
-- **Розблокувати програму на час** — користувач вводить тривалість від 1 до 15 хвилин. Перед активацією показується таймер зворотного відліку 30 секунд (який не можна пропустити). Після відліку блокування для цієї програми тимчасово знімається на вказаний час, після чого автоматично відновлюється.
-- **Зупинити сесію блокування** — зупиняє всі активні блокування до кінця поточного запланованого інтервалу (`IScheduler.PauseAll()`). Перед активацією показується таймер зворотного відліку 60 секунд (який не можна пропустити). Після закінчення інтервалу розклад відновлюється в штатному режимі.
-- Під час відліку кнопка підтвердження неактивна; є кнопка "Скасувати" для відміни.
-- Обидва таймери реалізувати через `DispatcherTimer` у ViewModel, відображати у форматі `0:30` / `1:00` з відліком донизу.
+- **Unblock an app temporarily** — user enters a duration from 1 to 15 minutes. Before activation, a 30-second countdown timer is shown (cannot be skipped). After the countdown, blocking for that app is temporarily lifted for the specified duration, then automatically restored.
+- **Stop the current blocking session** — stops all active blocking until the end of the current scheduled interval (`IScheduler.PauseAll()`). Before activation, a 60-second countdown timer is shown (cannot be skipped). After the interval ends, the schedule resumes normally.
+- During the countdown, the confirm button is disabled; there is a "Cancel" button to abort.
+- Both timers must be implemented via `DispatcherTimer` in the ViewModel, displayed in `0:30` / `1:00` format counting down.
 
-### Захист від обходу (опційно)
+### Bypass Protection (optional)
 
-- Windows Job Objects через P/Invoke (`CreateJobObject`, `AssignProcessToJobObject`) — не дають дочірнім процесам обійти блокування.
+- Windows Job Objects via P/Invoke (`CreateJobObject`, `AssignProcessToJobObject`) — prevents child processes from bypassing blocking.
 
 ---
 
-## NuGet пакети
+## NuGet Packages
 
 ```xml
 <!-- src/AppBlocker/AppBlocker.csproj -->
@@ -145,87 +146,88 @@ AppBlocker/
 
 ---
 
-## Команди розробки
+## Development Commands
 
 ```bash
-# Відновити залежності
+# Restore dependencies
 dotnet restore
 
-# Збірка
+# Build
 dotnet build
 
-# Запуск
+# Run
 dotnet run --project src/AppBlocker
 
-# Тести
+# Tests
 dotnet test
 
-# Додати міграцію EF
+# Add EF migration
 dotnet ef migrations add <MigrationName> --project src/AppBlocker
 
-# Застосувати міграції вручну
+# Apply migrations manually
 dotnet ef database update --project src/AppBlocker
 
-# Публікація (self-contained exe)
+# Publish (self-contained exe)
 dotnet publish src/AppBlocker -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
 ```
 
 ---
 
-## Важливі обмеження та підводні камені
+## Important Constraints and Pitfalls
 
-1. **Права адміністратора** — для вбивства деяких процесів потрібні права адміна. За замовчуванням додаток працює без прав адміна (user-level). Якщо потрібне вбивство системних/захищених процесів — додати маніфест з `requireAdministrator`. Але **не робити це за замовчуванням** — це зламає автозапуск через HKCU Run.
+1. **Administrator rights** — killing some processes requires admin rights. By default the app runs without admin rights (user-level). If killing system/protected processes is needed — add a manifest with `requireAdministrator`. But **do not do this by default** — it will break auto-startup via HKCU Run.
 
-2. **WMI підписки** — можуть не спрацювати без прав адміна залежно від версії Windows. Завжди мати fallback до polling.
+2. **WMI subscriptions** — may not work without admin rights depending on the Windows version. Always have a fallback to polling.
 
-3. **Single instance** — додаток має бути в одному екземплярі. Використовувати `Mutex` при старті:
+3. **Single instance** — the app must run as a single instance. Use a `Mutex` on startup:
    ```csharp
    var mutex = new Mutex(true, "AppBlocker_SingleInstance", out bool isNew);
-   if (!isNew) { /* показати існуюче вікно і вийти */ }
+   if (!isNew) { /* show existing window and exit */ }
    ```
 
-4. **Антивіруси** — kill процесів може тригерити Windows Defender. Це нормально, але варто задокументувати для користувача.
+4. **Antivirus** — killing processes may trigger Windows Defender. This is expected; document it for the user.
 
-5. **EF Core + WPF** — виклики до DbContext робити в background thread, результати маршалити в UI thread через `Application.Current.Dispatcher`.
+5. **EF Core + WPF** — make DbContext calls on a background thread; marshal results to the UI thread via `Application.Current.Dispatcher`.
 
-6. **Quartz.NET і DI** — Jobs мають бути зареєстровані як `Transient` в DI, не `Singleton`.
+6. **Quartz.NET and DI** — Jobs must be registered as `Transient` in DI, not `Singleton`.
 
 ---
 
 ## README.md
 
-Файл `README.md` знаходиться в корені проекту і є основною документацією для користувачів та розробників. При будь-яких змінах у функціональності, стеку, командах збірки або важливих обмеженнях — оновлювати `README.md` відповідно.
+The `README.md` file is in the project root and is the primary documentation for users and developers. Whenever functionality, stack, build commands, or important constraints change — update `README.md` accordingly.
 
 ---
 
-## Git-конвенції
+## Git Conventions
 
-### Гілки (Git Flow)
+### Branches (Git Flow)
 
-- `main` — стабільний реліз
-- `develop` — основна гілка розробки
-- `feature/<назва>` — нова функціональність (від `develop`)
-- `fix/<назва>` — виправлення багів (від `develop`)
-- `hotfix/<назва>` — термінові виправлення продакшну (від `main`)
-- `release/<версія>` — підготовка релізу (від `develop`)
+- `main` — stable release
+- `develop` — main development branch
+- `feature/<name>` — new functionality (from `develop`)
+- `fix/<name>` — bug fixes (from `develop`)
+- `hotfix/<name>` — urgent production fixes (from `main`)
+- `release/<version>` — release preparation (from `develop`)
 
-### Коміти (Conventional Commits)
+### Commits (Conventional Commits)
 
-Формат: `<тип>(<scope>): <стислий опис>`
+Format: `<type>(<scope>): <short description>`
 
-Типи:
-- `feat` — нова функція
-- `fix` — виправлення бага
-- `refactor` — рефакторинг без зміни поведінки
-- `style` — форматування, відступи (без логічних змін)
-- `test` — тести
-- `docs` — документація
-- `chore` — залежності, конфіги, білд
+Types:
+- `feat` — new feature
+- `fix` — bug fix
+- `refactor` — refactoring without behavior change
+- `style` — formatting, indentation (no logic changes)
+- `test` — tests
+- `docs` — documentation
+- `chore` — dependencies, configs, build
 
-Правила:
-- Опис — стисло, у форматі `що було зроблено` (без розлогих пояснень)
-- **Ніколи** не додавати `Co-Authored-By` або будь-які згадки авторства Claude у коміти
-- Приклади:
+Rules:
+- Description — concise, in the format `what was done` (no lengthy explanations)
+- **Never** add `Co-Authored-By` or any mention of Claude authorship in commits
+- **Split large changes into logical commits** — each commit should represent one coherent, self-contained change (e.g. model change, service logic, UI update). Do not bundle unrelated changes into a single commit. If a feature touches multiple layers (model → service → UI), commit each layer separately with a descriptive message.
+- Examples:
   - `feat(blocker): add WMI process watcher`
   - `fix(scheduler): restore jobs on app startup`
   - `refactor(tray): lazy init main window`
@@ -233,27 +235,27 @@ dotnet publish src/AppBlocker -c Release -r win-x64 --self-contained true -p:Pub
 
 ---
 
-## Конвенції коду
+## Code Conventions
 
-- Неймінг: `PascalCase` для публічних членів, `_camelCase` для приватних полів.
-- Усі публічні методи в сервісах — `async Task`, навіть якщо зараз синхронні.
-- ViewModels наслідувати від `ObservableObject` (CommunityToolkit.Mvvm).
-- Команди — `[RelayCommand]` атрибут (CommunityToolkit.Mvvm source generator).
-- Не використовувати `code-behind` у Views, крім ініціалізації (`InitializeComponent`).
-- Логувати всі операції блокування (що, коли, яка програма).
+- Naming: `PascalCase` for public members, `_camelCase` for private fields.
+- All public methods in services — `async Task`, even if currently synchronous.
+- ViewModels inherit from `ObservableObject` (CommunityToolkit.Mvvm).
+- Commands — `[RelayCommand]` attribute (CommunityToolkit.Mvvm source generator).
+- Do not use `code-behind` in Views, except for initialization (`InitializeComponent`).
+- Log all blocking operations (what, when, which app).
 
 ---
 
-## Порядок реалізації (рекомендований)
+## Implementation Order (recommended)
 
-1. Базова структура проекту + DI + App.xaml без вікна
-2. TrayIcon + контекстне меню + відкриття/закриття вікна
-3. Автозапуск (реєстр) + обробка `--minimized`
-4. EF Core + моделі + міграції
-5. BlockerService (polling-варіант)
-6. Базовий UI: список програм + додавання через browse
+1. Basic project structure + DI + App.xaml without window
+2. TrayIcon + context menu + open/close window
+3. Auto-startup (registry) + `--minimized` handling
+4. EF Core + models + migrations
+5. BlockerService (polling variant)
+6. Basic UI: app list + add via browse
 7. SchedulerService + Quartz jobs
-8. UI для розкладу
-9. WMI-підписка замість polling
-10. Налаштування
-11. Публікація як single-file exe
+8. Schedule UI
+9. WMI subscription instead of polling
+10. Settings
+11. Publish as single-file exe
