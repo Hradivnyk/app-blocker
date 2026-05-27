@@ -9,6 +9,7 @@ using AppBlocker.Views;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Quartz;
 using Serilog;
 
@@ -77,7 +78,12 @@ public partial class App : Application
                 services.AddSingleton<ISchedulerService, SchedulerService>();
                 services.AddSingleton<IStartupService, StartupService>();
                 services.AddSingleton<ProcessWatcherService>();
-                services.AddSingleton<TrayIconManager>();
+                services.AddSingleton<TrayIconManager>(sp =>
+                {
+                    var logger = sp.GetRequiredService<ILogger<TrayIconManager>>();
+                    var app = (App)Application.Current;
+                    return new TrayIconManager(logger, app.ShowMainWindow, Application.Current.Shutdown);
+                });
 
                 services.AddTransient<MainViewModel>();
                 services.AddTransient<AppsViewModel>();
