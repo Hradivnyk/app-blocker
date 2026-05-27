@@ -111,6 +111,9 @@ public partial class App : Application
         var tray = _host.Services.GetRequiredService<TrayIconManager>();
         tray.Initialize();
 
+        var blocker = _host.Services.GetRequiredService<IBlockerService>();
+        await blocker.StartAsync();
+
         if (!startMinimized)
         {
             ShowMainWindow();
@@ -125,6 +128,9 @@ public partial class App : Application
 
         if (_host is not null)
         {
+            var blocker = _host.Services.GetRequiredService<IBlockerService>();
+            await blocker.StopAsync();
+
             await _host.StopAsync(TimeSpan.FromSeconds(5));
             _host.Dispose();
         }
