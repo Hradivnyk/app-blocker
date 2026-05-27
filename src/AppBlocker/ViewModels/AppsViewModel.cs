@@ -16,6 +16,7 @@ public partial class AppsViewModel : ObservableObject
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IBlockerService _blockerService;
+    private readonly ISchedulerService _schedulerService;
     private readonly ILogger<AppsViewModel> _logger;
 
     [ObservableProperty]
@@ -30,10 +31,11 @@ public partial class AppsViewModel : ObservableObject
     [ObservableProperty]
     private bool _isLoading;
 
-    public AppsViewModel(IServiceScopeFactory scopeFactory, IBlockerService blockerService, ILogger<AppsViewModel> logger)
+    public AppsViewModel(IServiceScopeFactory scopeFactory, IBlockerService blockerService, ISchedulerService schedulerService, ILogger<AppsViewModel> logger)
     {
         _scopeFactory = scopeFactory;
         _blockerService = blockerService;
+        _schedulerService = schedulerService;
         _logger = logger;
     }
 
@@ -98,6 +100,8 @@ public partial class AppsViewModel : ObservableObject
 
         db.BlockedApps.Remove(entity);
         await db.SaveChangesAsync();
+
+        await _schedulerService.UnscheduleAppAsync(item.Id);
 
         _logger.LogInformation("Removed blocked app '{Name}'.", item.Name);
         Apps.Remove(item);
